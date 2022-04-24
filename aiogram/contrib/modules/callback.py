@@ -44,7 +44,7 @@ class ActionFilter(BoundFilter):
 
     async def check(self, update):
         if isinstance(update, types.CallbackQuery):
-            return ctx_data.get().get('call_data', {}).get('action') == self.call_action
+            return ctx_data.get().get('action') == self.call_action
 
         else:
             return False
