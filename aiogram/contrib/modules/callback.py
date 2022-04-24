@@ -3,7 +3,7 @@ import datetime
 import logging
 import asyncio
 try:
-  import cPickle as pickle
+  import dill as pickle
 except:
   import pickle
 import secrets
