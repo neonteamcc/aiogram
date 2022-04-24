@@ -14,9 +14,9 @@ import certifi
 from aiohttp.helpers import sentinel
 
 from . import api
-from .api import TelegramAPIServer, TELEGRAM_PRODUCTION
-from ..types import ParseMode, base
-from ..utils import json
+from .api import TelegramAPIServer, TELEGRAM_PRODUCTION, log
+from ..types import ParseMode, base, InputFile
+from ..utils import json, exceptions
 from ..utils.auth_widget import check_integrity
 from ..utils.deprecated import deprecated
 
@@ -209,6 +209,34 @@ class BaseBot:
         if self._session:
             await self._session.close()
 
+    @staticmethod
+    def close_files(files: Optional[Dict]):
+        [files[a].close() for a in files.keys() if isinstance(a, dict)] if files else None
+        output = dict()
+        if files:
+            for a, b in files.items():
+                if isinstance(b, io.BufferedReader):
+                    output.update(**{a: b.name})
+                elif isinstance(b, InputFile):
+                    if b.get_file() and isinstance(b.get_file(), io.BufferedReader):
+                        output.update(**{a: b.get_file().name})
+                    else:
+                        output.update(**{a: b})
+                else:
+                    output.update(**{a: b})
+        return output
+
+    @staticmethod
+    def open_files(files: Optional[Dict]):
+        output = dict()
+        if files:
+            for a, b in files.items():
+                if isinstance(b, str):
+                    output.update(**{a: open(b, 'rb')})
+                else:
+                    output.update(**{a: b})
+        return output
+
     async def request(self, method: base.String,
                       data: Optional[Dict] = None,
                       files: Optional[Dict] = None, **kwargs) -> Union[List, Dict, base.Boolean]:
@@ -228,8 +256,30 @@ class BaseBot:
         :raise: :obj:`aiogram.exceptions.TelegramApiError`
         """
 
-        return await api.make_request(await self.get_session(), self.server, self.__token, method, data, files,
-                                      proxy=self.proxy, proxy_auth=self.proxy_auth, timeout=self.timeout, **kwargs)
+        files = self.close_files(files)
+
+        for a in ['certificate', 'photo', 'audio', 'video', 'animation', 'voice',
+                  'video_note', 'sticker', 'png_sticker', 'tgs_sticker', 'webm_sticker', 'thumb', 'document']:
+            path = data.get(a)
+            if not path:
+                continue
+            if not os.path.isfile(data.get(a)):
+                continue
+            if not files:
+                files = dict()
+            files[a] = data.pop(a)
+
+        while True:
+            try:
+                files = self.open_files(files)
+                return await api.make_request(
+                    await self.get_session(), self.server, self.__token, method, data, files,
+                    proxy=self.proxy, proxy_auth=self.proxy_auth, timeout=self.timeout, **kwargs)
+            except exceptions.RetryAfter as e:
+                log.warning('Flood control exceeded. Retrying after {} sec.'.format(e.timeout))
+                await asyncio.sleep(e.timeout)
+            finally:
+                files = self.close_files(files)
 
     async def download_file(
             self,

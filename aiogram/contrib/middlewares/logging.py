@@ -1,5 +1,6 @@
 import logging
 import time
+from typing import Union, List, Optional
 
 from aiogram import types
 from aiogram.dispatcher.middlewares import BaseMiddleware
@@ -7,12 +8,73 @@ from aiogram.dispatcher.middlewares import BaseMiddleware
 HANDLED_STR = ['Unhandled', 'Handled']
 
 
+class LoggingStreamFormatter(logging.Formatter):
+    bold = "\u001b[1m"
+    underline = "\u001b[4m"
+    reversed = "\u001b[7m"
+    black = "\u001b[30m"
+    red = "\u001b[31m"
+    green = "\u001b[32m"
+    yellow = "\u001b[33m"
+    blue = "\u001b[34m"
+    magenta = "\u001b[35m"
+    cyan = "\u001b[36m"
+    white = "\u001b[37m"
+    reset = "\u001b[0m"
+
+    formatter = ('{underline}{magenta}%(asctime)s{reset}{white}:'
+                 '{level}{white}:'
+                 '{cyan}%(name)s{white}:'
+                 '{white}%(message)s{reset}').format(
+        reversed=reversed, underline=underline, bold=bold,
+        black=black, red=red, green=green, yellow=yellow, blue=blue,
+        magenta=magenta, cyan=cyan, white=white, reset=reset, level='{}')
+
+    FORMATS = {
+        logging.DEBUG: formatter.format(white + 'DEBUG'),
+        logging.INFO: formatter.format(cyan + 'INFO'),
+        logging.WARNING: formatter.format(yellow + 'WARNING'),
+        logging.ERROR: formatter.format(red + 'ERROR'),
+        logging.CRITICAL: formatter.format(red + 'CRITICAL')
+    }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
+
+class LoggingFormatter(logging.Formatter):
+    formatter = '%(asctime)s:%(levelname)s:%(name)s:%(message)s'
+
+    def format(self, record):
+        formatter = logging.Formatter(self.formatter)
+        return formatter.format(record)
+
+
 class LoggingMiddleware(BaseMiddleware):
-    def __init__(self, logger=__name__):
+    def __init__(self, logger=__name__,
+                 handler: Optional[Union[logging.Handler, List[logging.Handler]]] = None):
         if not isinstance(logger, logging.Logger):
             logger = logging.getLogger(logger)
 
         self.logger = logger
+        self.root_logger = logging.getLogger()
+
+        if handler is None:
+            handler = logging.StreamHandler()
+            handler.setLevel(logging.INFO)
+
+        self.root_logger.setLevel(0)
+        if isinstance(handler, list):
+            for h in handler:
+                h.setFormatter(
+                    LoggingStreamFormatter() if type(h) == logging.StreamHandler else LoggingFormatter())
+                self.root_logger.addHandler(h)
+        else:
+            handler.setFormatter(
+                LoggingStreamFormatter() if type(handler) == logging.StreamHandler else LoggingFormatter())
+            self.root_logger.addHandler(handler)
 
         super(LoggingMiddleware, self).__init__()
 
