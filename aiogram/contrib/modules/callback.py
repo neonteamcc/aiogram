@@ -10,7 +10,7 @@ import secrets
 import sqlite3
 import aiosqlite
 
-from typing import Any
+from typing import Any, List
 
 from aiogram import types, Dispatcher
 from aiogram.dispatcher.filters import BoundFilter
@@ -21,12 +21,13 @@ from aiogram.dispatcher.middlewares import BaseMiddleware
 class CallbackMiddleware(BaseMiddleware):
     def __init__(self, callbacks):
         super().__init__()
-        self.__setattr__('callbacks', callbacks)
+        setattr(self, 'callbacks', callbacks)
 
     async def on_pre_process_callback_query(self, call: types.CallbackQuery, data: dict):
-        data['call_data'] = await self.callbacks.get_data(call.data)
-        if data['call_data'].get('action'):
-            call.data = data['call_data'].get('action')
+        for a, b in (await getattr(self, 'callbacks').get_data(call.data)).items():
+            data[a] = b
+            if a == 'action':
+                call.data = b
 
     async def on_post_process_callback_query(self, call: types.CallbackQuery, results, data: dict):
         try:
