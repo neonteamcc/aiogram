@@ -1,4 +1,6 @@
 import asyncio
+import random
+
 from typing import List
 
 from aiogram import types
