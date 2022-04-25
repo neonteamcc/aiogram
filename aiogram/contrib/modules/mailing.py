@@ -52,6 +52,7 @@ class Mailing:
                 self.mailing.sent.append(a)
                 self.mailing.percentage = round(len(self.mailing.sent) * 100 / len(self.users_to_sent))
 
+        del mailings[self.mailing.id]
         self.mailing.active = False
 
     async def stop(self):
