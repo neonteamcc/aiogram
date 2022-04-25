@@ -24,7 +24,7 @@ class Mailing:
     def __init__(self, users_to_sent: List[int], post: types.Message):
         self.users_to_sent = users_to_sent
         self.post = post
-        self.mailing = MailingModel(id=''.join([str(a) for a in random.randint(1, 100000000)]),
+        self.mailing = MailingModel(id=str(random.randint(1, 9999999999999999)),
                                     active=False, sent=[], percentage=0, alive=[], dead=[])
 
     async def start(self) -> MailingModel:
