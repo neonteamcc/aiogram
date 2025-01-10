@@ -92,7 +92,7 @@ class LoggingMiddleware(BaseMiddleware):
     async def on_post_process_update(self, update: types.Update, result, data: dict):
         timeout = self.check_timeout(update)
         if timeout > 0:
-            self.logger.info(f"Process update [ID:{update.update_id}]: [success] (in {timeout} ms) {update.to_python() if timeout < 10000 else ''}")
+            self.logger.info(f"Process update [ID:{update.update_id}]: [success] (in {timeout} ms) {update.to_python() if timeout > 5000 else ''}")
 
     async def on_pre_process_message(self, message: types.Message, data: dict):
         self.logger.info(f"Received message [ID:{message.message_id}] in chat [{message.chat.type}:{message.chat.id}]")
