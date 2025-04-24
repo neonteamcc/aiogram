@@ -62,7 +62,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Application Frameworks',
     ],
     install_requires=[
-        'aiohttp>=3.8.0,<3.9.0',
+        'aiohttp>=3.11.0,<3.12.0',
         'Babel>=2.9.1,<2.10.0',
         'certifi>=2021.10.8',
     ],
