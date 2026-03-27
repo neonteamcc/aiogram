@@ -211,7 +211,7 @@ class BaseBot:
 
     @staticmethod
     def close_files(files: Optional[Dict]):
-        [files[a].close() for a in files.keys() if isinstance(a, dict)] if files else None
+        [b.close() for b in files.values() if isinstance(b, io.BufferedReader)] if files else None
         output = dict()
         if files:
             for a, b in files.items():
